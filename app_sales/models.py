@@ -26,27 +26,38 @@ class SalesInvoice(models.Model):
         ('mobile', 'Mobile Banking'),
     ]
 
-    invoice_no = models.CharField(max_length=30, unique=True)
+    invoice_no = models.PositiveIntegerField(unique=True, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     date = models.DateField(default=timezone.now)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    received_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     due_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='cash')
     remarks = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Invoice {self.invoice_no}"
+        return f"Invoice #{self.invoice_no}"
 
     def save(self, *args, **kwargs):
-        # Auto generate invoice_no if not given
+        # Auto-generate invoice number
         if not self.invoice_no:
-            prefix = "SAL"
-            last = SalesInvoice.objects.order_by('-id').first()
-            next_no = (last.id + 1) if last else 1
-            self.invoice_no = f"{prefix}-{next_no:05d}"
+            last_invoice = SalesInvoice.objects.all().order_by('id').last()
+            if last_invoice:
+                self.invoice_no = last_invoice.invoice_no + 1
+            else:
+                self.invoice_no = 1
+
+        # Auto-calculate due amount
+        self.due_amount = self.total_amount - self.received_amount
         super().save(*args, **kwargs)
+
+    # 🔹 নতুন যোগ করা মেথড: ইনভয়েসের টোটাল আপডেট
+    def update_total_amount(self):
+        total = sum(item.total_price for item in self.items.all())
+        self.total_amount = total
+        self.due_amount = self.total_amount - self.received_amount
+        self.save(update_fields=["total_amount", "due_amount"])
 
 
 # -------- Sales Item --------
@@ -77,6 +88,9 @@ class SalesItem(models.Model):
             reference=f"Sales #{self.invoice.id}",
             remarks="Sale made"
         )
+
+        # 🔹 নতুন যোগ করা অংশ: ইনভয়েস টোটাল আপডেট
+        self.invoice.update_total_amount()
 
 
 # -------- Return Item --------
@@ -113,3 +127,12 @@ class SalesPayment(models.Model):
 
     def __str__(self):
         return f"{self.invoice.invoice_no} - {self.amount} ({self.method})"
+
+    # 🔹 ঐচ্ছিক: পেমেন্ট হলে due/received অটো আপডেট
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        invoice = self.invoice
+        received_total = sum(p.amount for p in invoice.payments.all())
+        invoice.received_amount = received_total
+        invoice.due_amount = invoice.total_amount - received_total
+        invoice.save(update_fields=["received_amount", "due_amount"])

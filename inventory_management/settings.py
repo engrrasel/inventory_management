@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'app_user',
     'app_dashboard',
     'app_asset',
+    'app_expense',
 ]
 
 

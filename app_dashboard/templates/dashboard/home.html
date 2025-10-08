@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="glass-bg"></div>
+
+  <div class="sidebar">
+  <h2><i class="fas fa-layer-group"></i> Inventory</h2>
+
+  <div class="menu-section">
+    <div class="menu-header" onclick="toggleMenu('sales')">
+      <span>Sales & Payment</span>
+      <span class="rotate">▼</span>
+    </div>
+    <ul id="sales" class="submenu">
+      <li><a href="#">Add Sale</a></li>
+      <li><a href="#">Sales List</a></li>
+      <li><a href="#">Payment</a></li>
+    </ul>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-header" onclick="toggleMenu('purchase')">
+      <span>Purchase</span>
+      <span class="rotate">▼</span>
+    </div>
+    <ul id="purchase" class="submenu">
+      <li><a href="#">Add Purchase</a></li>
+      <li><a href="#">Purchase List</a></li>
+    </ul>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-header" onclick="toggleMenu('reports')">
+      <span>Reports</span>
+      <span class="rotate">▼</span>
+    </div>
+    <ul id="reports" class="submenu">
+      <li><a href="#">Account Transactions</a></li>
+      <li><a href="#">Stock Report</a></li>
+      <li><a href="#">Ledger</a></li>
+      <li><a href="#">Sales</a></li>
+      <li><a href="#">Purchases</a></li>
+      <li><a href="#">Profit & Loss</a></li>
+      <li><a href="#">Balance Sheet</a></li>
+      <li><a href="#">Expense Breakdown</a></li>
+      <li><a href="#">Tax</a></li>
+    </ul>
+  </div>
+</div>
+
+  <div class="content">
+    <h1>Dashboard Overview</h1>
+    <div class="cards">
+      <div class="glass-card">
+        <h3>Products</h3>
+        <p>2</p>
+      </div>
+      <div class="glass-card">
+        <h3>Suppliers</h3>
+        <p>1</p>
+      </div>
+      <div class="glass-card">
+        <h3>Purchases</h3>
+        <p>2</p>
+      </div>
+      <div class="glass-card">
+        <h3>Sales</h3>
+        <p>0</p>
+      </div>
+    </div>
+
+    <div class="glass-card chart-container">
+      <h3>Reports & Analytics</h3>
+      <p>Coming soon...</p>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu(id) {
+      const el = document.getElementById(id);
+      const icon = el.previousElementSibling.querySelector(".rotate");
+      if (el.style.display === "block") {
+        el.style.display = "none";
+        icon.style.transform = "rotate(0deg)";
+      } else {
+        el.style.display = "block";
+        icon.style.transform = "rotate(180deg)";
+      }
+    }
+  </script>
+</body>
+</html>
