@@ -1,0 +1,40 @@
+# ==============================
+# Django Project .gitignore File
+# ==============================
+
+# --- Python compiled files ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environment ---
+env/
+venv/
+ENV/
+.venv/
+
+# --- Django Specific ---
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+
+# --- Media & Static (User Uploaded Files) ---
+/media/
+/staticfiles/
+
+# --- IDE / Editor settings ---
+.vscode/
+.idea/
+*.swp
+
+# --- System files ---
+.DS_Store
+Thumbs.db
+
+# --- Cache ---
+*.cache
+*.bak
+*.tmp
