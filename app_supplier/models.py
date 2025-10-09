@@ -18,4 +18,4 @@ class Supplier(models.Model):
         verbose_name_plural = "Suppliers"
 
     def __str__(self):
-        return self.name
+        return self.company_name if self.company_name else self.name

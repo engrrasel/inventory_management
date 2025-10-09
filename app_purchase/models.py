@@ -7,10 +7,17 @@ from app_stock.utils import update_stock
 
 
 # ---------- Purchase Invoice ----------
+# ---------- Purchase Invoice ----------
 class PurchaseInvoice(models.Model):
     invoice_no = models.CharField(max_length=20, unique=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     date = models.DateField(default=timezone.now)
+
+    # নতুন যোগ করা ফিল্ডগুলো
+    delivery_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    other_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     due_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -21,7 +28,6 @@ class PurchaseInvoice(models.Model):
         ('due', 'Due'),
         ('mobile_banking', 'Mobile Banking'),
     ]
-
     payment_method = models.CharField(
         max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash'
     )
@@ -42,7 +48,13 @@ class PurchaseInvoice(models.Model):
             last_invoice = PurchaseInvoice.objects.order_by('-lot_number').first()
             self.lot_number = (last_invoice.lot_number + 1) if last_invoice else 1
 
-        # ---------- Auto Calculate Due ----------
+        # ---------- Auto Calculate Totals ----------
+        total_items = sum(item.total_price for item in self.items.all()) if self.pk else 0
+
+        # (Total items + delivery + other) - discount
+        self.total_amount = (total_items + self.delivery_cost + self.other_cost) - self.discount
+
+        # Due = Total - Paid
         self.due_amount = self.total_amount - self.paid_amount
 
         super().save(*args, **kwargs)

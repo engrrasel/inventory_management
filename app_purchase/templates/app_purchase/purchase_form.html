@@ -1,0 +1,24 @@
+<script>
+function updateTotals() {
+    let delivery = parseFloat(document.getElementById('id_delivery_cost').value) || 0;
+    let other = parseFloat(document.getElementById('id_other_cost').value) || 0;
+    let discount = parseFloat(document.getElementById('id_discount').value) || 0;
+    let paid = parseFloat(document.getElementById('id_paid_amount').value) || 0;
+
+    // Total item amount backend থেকে আসবে — যদি JS এও হিসাব দিতে চাও, আলাদা logic লাগবে
+    let baseTotal = parseFloat(document.getElementById('id_total_amount').value) || 0;
+
+    let total = (baseTotal + delivery + other) - discount;
+    let due = total - paid;
+
+    document.getElementById('id_total_amount').value = total.toFixed(2);
+    document.getElementById('id_due_amount').value = due.toFixed(2);
+}
+
+// Change হলে auto update হবে
+['id_delivery_cost', 'id_other_cost', 'id_discount', 'id_paid_amount']
+.forEach(id => {
+    let input = document.getElementById(id);
+    if (input) input.addEventListener('input', updateTotals);
+});
+</script>

@@ -61,7 +61,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
 
         # ✅ Project-level templates folder
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'inventory_management', 'templates')],
 
         'APP_DIRS': True,
         'OPTIONS': {
