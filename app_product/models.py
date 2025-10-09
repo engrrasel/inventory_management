@@ -43,7 +43,7 @@ class Unit(models.Model):
 
 class Product(models.Model):
     sku = models.CharField(max_length=80, unique=True, editable=False)
-    name = models.CharField(max_length=150)
+    name = models.CharField(unique=True,max_length=150, blank=True, null=True)
     slug = models.SlugField(unique=True, blank=True, null=True)
     model = models.CharField(max_length=100, blank=True, null=True)
 
@@ -105,13 +105,17 @@ class Product(models.Model):
             counter += 1
 
         return sku
-
+    
     def save(self, *args, **kwargs):
-        # Generate SKU only when missing (first save)
+        # 1️⃣ Name auto generate from brand + model
+        if self.brand and self.model:
+            self.name = f"{self.brand.name} {self.model}"
+
+        # 2️⃣ SKU generate only when missing
         if not self.sku:
             self.sku = self.generate_sku()
 
-        # Auto-generate slug from name (if missing). Add numeric suffix if slug collision.
+        # 3️⃣ Slug auto generate from name
         if not self.slug and self.name:
             base_slug = slugify(self.name)
             slug = base_slug
@@ -122,6 +126,7 @@ class Product(models.Model):
             self.slug = slug
 
         super().save(*args, **kwargs)
+
 
 
 class ProductPriceHistory(models.Model):

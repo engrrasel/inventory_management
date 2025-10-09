@@ -44,15 +44,16 @@ class ColorAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
-        "sku", "name", "brand", "category", "subcategory", "color",
+        "sku", "name", "brand", "subcategory", "color",
         "unit", "purchase_price", "sale_price", "is_active"
     )
     list_filter = ("brand", "category", "subcategory", "color", "is_active")
     search_fields = ("sku", "name", "brand__name", "category__name", "color__name")
     readonly_fields = ("sku", "created_at", "updated_at")
-    prepopulated_fields = {"slug": ("name",)}
+    prepopulated_fields = {"slug": ("name",), "name": ("brand", "model")}
     list_per_page = 25
     ordering = ("brand", "category", "name")
+    
 
 
 # ---------- Product Price History ----------
