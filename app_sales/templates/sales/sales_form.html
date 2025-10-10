@@ -6,9 +6,7 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50 p-10">
   <div class="bg-white shadow-xl rounded-2xl p-8 max-w-5xl mx-auto">
-    <h2 class="text-3xl font-bold mb-6">
-      {% if edit_mode %}✏️ Edit Sale{% else %}🧾 Create New Sale{% endif %}
-    </h2>
+    <h2 class="text-3xl font-bold mb-6">🧾 Create New Sale</h2>
 
     <form method="post">
       {% csrf_token %}
@@ -39,9 +37,6 @@
             {{ formset.management_form }}
             {% for form in formset %}
             <tr class="sale-row">
-              {{ form.id }}      <!-- hidden id field, edit mode এর জন্য জরুরি -->
-              {{ form.DELETE }}  <!-- hidden DELETE checkbox -->
-
               <td class="px-4 py-2">{{ form.product }}</td>
               <td class="px-4 py-2">{{ form.quantity }}</td>
               <td class="px-4 py-2">{{ form.unit_price }}</td>
@@ -61,11 +56,12 @@
           <p class="font-bold text-xl">Total: <span id="grandtotal">0.00</span></p>
         </div>
       </div>
+      
 
       <div class="flex justify-end mt-8">
         <button type="submit"
           class="bg-blue-600 text-black px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">💾 Save Sale</button>
-      </div>
+
     </form>
   </div>
 </div>
@@ -76,51 +72,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const addBtn = document.getElementById("add-item");
   const totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
+  // 🧮 Update totals
   function updateTotals() {
     let subtotal = 0;
     document.querySelectorAll(".sale-row").forEach(row => {
       const qty = parseFloat(row.querySelector('[name$="quantity"]').value) || 0;
       const price = parseFloat(row.querySelector('[name$="unit_price"]').value) || 0;
-      row.querySelector(".total").textContent = (qty * price).toFixed(2);
+      const totalCell = row.querySelector(".total");
+      totalCell.textContent = (qty * price).toFixed(2);
       subtotal += qty * price;
     });
     document.getElementById("subtotal").textContent = subtotal.toFixed(2);
     document.getElementById("grandtotal").textContent = subtotal.toFixed(2);
   }
 
+  // 🆕 Add new form row dynamically
   addBtn.addEventListener("click", () => {
     const formNum = parseInt(totalForms.value);
-    const lastRow = tableBody.querySelector("tr:last-child");
-    const newRow = lastRow.cloneNode(true);
-
-    newRow.querySelectorAll("input, select").forEach(input => {
-      if (input.name) {
-        input.name = input.name.replace(/-\d+-/, `-${formNum}-`);
-        input.id = input.id.replace(/-\d+-/, `-${formNum}-`);
-      }
-
-      if (input.type === "hidden") {
-        if (input.name.endsWith("id")) {
-          input.value = ""; // new row, no existing id
-        } else if (input.name.endsWith("DELETE")) {
-          input.checked = false;
-        }
-      } else {
-        input.value = "";
-      }
+    const newForm = tableBody.querySelector("tr").cloneNode(true);
+    newForm.querySelectorAll("input, select").forEach(input => {
+      input.name = input.name.replace(`-${formNum - 1}-`, `-${formNum}-`);
+      input.id = input.id.replace(`-${formNum - 1}-`, `-${formNum}-`);
+      input.value = "";
     });
-
-    tableBody.appendChild(newRow);
+    tableBody.appendChild(newForm);
     totalForms.value = formNum + 1;
   });
 
+  // 🧮 Listen for input updates
   tableBody.addEventListener("input", e => {
     if (e.target.matches('[name$="quantity"], [name$="unit_price"]')) {
       updateTotals();
     }
   });
-
-  updateTotals(); // load page এ total ঠিক দেখানোর জন্য
 });
 </script>
 {% endblock %}

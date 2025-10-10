@@ -6,76 +6,55 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50 p-10">
   <div class="bg-white shadow-xl rounded-2xl p-8 max-w-5xl mx-auto">
-    <h2 class="text-3xl font-bold mb-6">🔄 Return Sale</h2>
+    <h2 class="text-3xl font-bold mb-6">↩️ Record Product Return</h2>
 
-    <form method="post">
+    <form method="post" id="return-form">
       {% csrf_token %}
+      {{ formset.management_form }}
 
-      <div class="grid grid-cols-2 gap-6 mb-8">
-        <!-- Select Invoice -->
-        <div>
-          <label class="font-semibold text-gray-700">Invoice</label>
-          <select name="invoice" id="invoice" class="border rounded px-3 py-2 w-full">
-            <option value="">Select Invoice</option>
-            {% for inv in invoices %}
-              <option value="{{ inv.id }}" {% if selected_invoice and selected_invoice.id == inv.id %}selected{% endif %}>
-                #{{ inv.invoice_no }} - {{ inv.customer.name }}
-              </option>
-            {% endfor %}
-          </select>
-          {% if form.errors.invoice %}
-            <p class="text-red-500 text-sm">{{ form.errors.invoice }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Date -->
-        <div>
-          <label class="font-semibold text-gray-700">Return Date</label>
-          <input type="date" name="date" value="{{ form.date.value|default_if_none:today }}" class="border rounded px-3 py-2 w-full">
-          {% if form.errors.date %}
-            <p class="text-red-500 text-sm">{{ form.errors.date }}</p>
-          {% endif %}
-        </div>
+      <!-- Select Invoice -->
+      <div class="mb-6">
+        <label class="font-semibold text-gray-700">Select Invoice</label>
+        <select id="invoice-select" name="invoice" class="border rounded px-2 py-1 w-full">
+          <option value="">-- Select Invoice --</option>
+          {% for invoice in invoices %}
+            <option value="{{ invoice.id }}">Invoice #{{ invoice.invoice_no }}</option>
+          {% endfor %}
+        </select>
       </div>
 
-      <h3 class="text-2xl font-semibold mb-3">🛒 Returned Items</h3>
-      <div class="overflow-x-auto border rounded-lg">
-        <table class="min-w-full text-sm" id="return-table">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-4 py-2 text-left">Product</th>
-              <th class="px-4 py-2 text-left">Quantity</th>
-              <th class="px-4 py-2 text-left">Reason</th>
-              <th class="px-4 py-2 text-left">Remove</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{ formset.management_form }}
-            {% for form in formset %}
-            <tr class="return-row">
-              {{ form.id }}    <!-- Hidden ID field -->
-              {{ form.DELETE }} <!-- Hidden DELETE checkbox -->
+      <!-- Return Items Table -->
+      <table class="min-w-full border rounded-lg mb-4" id="return-table">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">Product</th>
+            <th class="px-4 py-2 text-left">Quantity</th>
+            <th class="px-4 py-2 text-left">Reason</th>
+            <th class="px-4 py-2 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+          <tr class="return-row">
+            <td class="px-4 py-2">{{ form.product }}</td>
+            <td class="px-4 py-2">{{ form.quantity }}</td>
+            <td class="px-4 py-2">{{ form.reason }}</td>
+            <td class="px-4 py-2">
+              <button type="button" class="remove-row bg-red-500 text-white px-2 py-1 rounded">❌</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
 
-              <td class="px-4 py-2">{{ form.product }}</td>
-              <td class="px-4 py-2">{{ form.quantity }}</td>
-              <td class="px-4 py-2">{{ form.reason }}</td>
-              <td class="px-4 py-2">
-                <button type="button" class="remove-row bg-red-500 text-white px-2 py-1 rounded">✖</button>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <button type="button" id="add-item" class="bg-green-600 text-black px-4 py-2 rounded hover:bg-green-700 mb-4">
+        ➕ Add Item
+      </button>
 
-      <div class="flex justify-between items-center mt-6">
-        <button type="button" id="add-return-item"
-          class="bg-green-600 text-black px-4 py-2 rounded hover:bg-green-700">➕ Add Item</button>
-      </div>
-
-      <div class="flex justify-end mt-8">
-        <button type="submit"
-          class="bg-blue-600 text-black px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">💾 Save Return</button>
+      <div class="flex justify-end">
+        <button type="submit" class="bg-blue-600 text-black px-6 py-3 mt-4 rounded-lg font-semibold hover:bg-blue-700">
+          💾 Save Return
+        </button>
       </div>
     </form>
   </div>
@@ -83,47 +62,89 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const tableBody = document.querySelector("#return-table tbody");
-  const addBtn = document.getElementById("add-return-item");
-  const totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+    const tableBody = document.querySelector("#return-table tbody");
+    const addBtn = document.getElementById("add-item");
+    const totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+    const invoiceSelect = document.getElementById("invoice-select");
 
-  // Add new return row dynamically
-  addBtn.addEventListener("click", () => {
-    const formNum = parseInt(totalForms.value);
-    const lastRow = tableBody.querySelector("tr:last-child");
-    const newRow = lastRow.cloneNode(true);
+    // 1️⃣ Load invoice items via Ajax
+    invoiceSelect.addEventListener("change", () => {
+        const invoiceId = invoiceSelect.value;
+        if (!invoiceId) return;
 
-    newRow.querySelectorAll("input, select, textarea").forEach(input => {
-      if (input.name) {
-        input.name = input.name.replace(/-\d+-/, `-${formNum}-`);
-        input.id = input.id.replace(/-\d+-/, `-${formNum}-`);
-      }
+        fetch(`/sales/invoice-items/${invoiceId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing rows
+                tableBody.innerHTML = "";
 
-      if (input.type === "hidden") {
-        if (input.name.endsWith("id")) input.value = "";
-        if (input.name.endsWith("DELETE")) input.checked = false;
-      } else {
-        input.value = "";
-      }
+                data.items.forEach((item, index) => {
+                    const row = document.createElement("tr");
+                    row.classList.add("return-row");
+                    row.innerHTML = `
+                        <td class="px-4 py-2">
+                            <select name="form-${index}-product" class="border rounded px-2 py-1 w-full">
+                                <option value="${item.product}" selected>${item.product_name}</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2">
+                            <input type="number" name="form-${index}-quantity" value="${item.quantity}" step="0.01" class="border rounded px-2 py-1 w-full">
+                        </td>
+                        <td class="px-4 py-2">
+                            <input type="text" name="form-${index}-reason" class="border rounded px-2 py-1 w-full">
+                        </td>
+                        <td class="px-4 py-2">
+                            <button type="button" class="remove-row bg-red-500 text-white px-2 py-1 rounded">❌</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                totalForms.value = data.items.length;
+            });
     });
 
-    tableBody.appendChild(newRow);
-    totalForms.value = formNum + 1;
-  });
+    // 2️⃣ Add new empty row
+    addBtn.addEventListener("click", () => {
+        const formNum = parseInt(totalForms.value);
+        const newRow = document.createElement("tr");
+        newRow.classList.add("return-row");
+        newRow.innerHTML = `
+            <td class="px-4 py-2">
+                <select name="form-${formNum}-product" class="border rounded px-2 py-1 w-full">
+                    <option value="">-- Select Product --</option>
+                </select>
+            </td>
+            <td class="px-4 py-2">
+                <input type="number" name="form-${formNum}-quantity" step="0.01" class="border rounded px-2 py-1 w-full">
+            </td>
+            <td class="px-4 py-2">
+                <input type="text" name="form-${formNum}-reason" class="border rounded px-2 py-1 w-full">
+            </td>
+            <td class="px-4 py-2">
+                <button type="button" class="remove-row bg-red-500 text-white px-2 py-1 rounded">❌</button>
+            </td>
+        `;
+        tableBody.appendChild(newRow);
+        totalForms.value = formNum + 1;
+    });
 
-  // Remove row
-  tableBody.addEventListener("click", e => {
-    if (e.target.classList.contains("remove-row")) {
-      const row = e.target.closest("tr");
-      const deleteInput = row.querySelector('input[type="checkbox"][name$="DELETE"]');
-      if (deleteInput) {
-        deleteInput.checked = true;
-        row.style.display = "none"; // Hide row visually
-      } else {
-        row.remove();
-      }
-    }
-  });
+    // 3️⃣ Remove row
+    tableBody.addEventListener("click", e => {
+        if (e.target.classList.contains("remove-row")) {
+            const row = e.target.closest("tr");
+            row.remove();
+
+            const forms = tableBody.querySelectorAll("tr.return-row");
+            totalForms.value = forms.length;
+
+            forms.forEach((row, index) => {
+                row.querySelectorAll("input, select").forEach(input => {
+                    input.name = input.name.replace(/form-\d+-/, `form-${index}-`);
+                });
+            });
+        }
+    });
 });
 </script>
 {% endblock %}

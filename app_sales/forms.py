@@ -38,3 +38,14 @@ class ReturnForm(forms.ModelForm):
     class Meta:
         model = ReturnItem
         fields = ['date']
+
+
+class ReturnItemForm(forms.ModelForm):
+    class Meta:
+        model = ReturnItem
+        fields = ['product', 'quantity', 'reason']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'border rounded px-2 py-1 w-full'}),
+            'quantity': forms.NumberInput(attrs={'class': 'border rounded px-2 py-1 w-full'}),
+            'reason': forms.Textarea(attrs={'rows': 1, 'class': 'border rounded px-2 py-1 w-full'}),
+        }
