@@ -1,6 +1,7 @@
 from django import forms
 from .models import SalesInvoice, SalesItem
 
+
 class SalesInvoiceForm(forms.ModelForm):
     class Meta:
         model = SalesInvoice
@@ -18,3 +19,5 @@ class SalesItemForm(forms.ModelForm):
             'quantity': forms.NumberInput(attrs={'step': '0.01', 'class': 'input'}),
             'unit_price': forms.NumberInput(attrs={'step': '0.01', 'class': 'input'}),
         }
+
+

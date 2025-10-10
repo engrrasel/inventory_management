@@ -4,106 +4,123 @@
 {% block title %}Create Sale{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 flex items-center justify-center p-6">
-  <div class="bg-white shadow-2xl rounded-3xl w-full max-w-5xl p-10 border border-gray-200">
-    <div class="flex items-center justify-between mb-8">
-      <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-        🧾 <span>Create New Sale</span>
-      </h2>
-      <a href="{% url 'sales_list' %}" class="text-sm text-blue-600 hover:underline">
-        ← Back to Sales List
-      </a>
-    </div>
+<div class="min-h-screen bg-gray-50 p-10">
+  <div class="bg-white shadow-xl rounded-2xl p-8 max-w-5xl mx-auto">
+    <h2 class="text-3xl font-bold mb-6">
+      {% if edit_mode %}✏️ Edit Sale{% else %}🧾 Create New Sale{% endif %}
+    </h2>
 
-    <form method="post" class="space-y-8">
+    <form method="post">
       {% csrf_token %}
-
-      <!-- 🧍 Customer Info -->
-      <div class="grid grid-cols-2 gap-6 bg-blue-50/40 p-6 rounded-xl border border-blue-100">
+      <div class="grid grid-cols-2 gap-6 mb-8">
         {% for field in invoice_form %}
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">{{ field.label }}</label>
-            {{ field }}
-            {% for error in field.errors %}
-              <p class="text-red-500 text-xs mt-1">{{ error }}</p>
-            {% endfor %}
-          </div>
+        <div>
+          <label class="font-semibold text-gray-700">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p class="text-red-500 text-sm">{{ error }}</p>
+          {% endfor %}
+        </div>
         {% endfor %}
       </div>
 
-      <!-- 🛒 Sale Items -->
-      <div>
-        <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          🛍️ <span>Sale Items</span>
-        </h3>
-        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-          <table class="min-w-full text-sm">
-            <thead class="bg-blue-100 text-gray-800 text-left">
-              <tr>
-                <th class="py-3 px-4 font-semibold">Product</th>
-                <th class="py-3 px-4 font-semibold">Quantity</th>
-                <th class="py-3 px-4 font-semibold">Unit Price</th>
-                <th class="py-3 px-4 font-semibold">Total</th>
-              </tr>
-            </thead>
-            <tbody id="sales-items" class="divide-y divide-gray-200">
-              {{ formset.management_form }}
-              {% for form in formset %}
-              <tr class="hover:bg-gray-50 transition">
-                <td class="py-2 px-4">{{ form.product }}</td>
-                <td class="py-2 px-4">{{ form.quantity }}</td>
-                <td class="py-2 px-4">{{ form.unit_price }}</td>
-                <td class="py-2 px-4 font-semibold text-gray-700 total">0.00</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+      <h3 class="text-2xl font-semibold mb-3">🛍️ Sale Items</h3>
+      <div class="overflow-x-auto border rounded-lg">
+        <table class="min-w-full text-sm" id="sales-table">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left">Product</th>
+              <th class="px-4 py-2 text-left">Quantity</th>
+              <th class="px-4 py-2 text-left">Unit Price</th>
+              <th class="px-4 py-2 text-left">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ formset.management_form }}
+            {% for form in formset %}
+            <tr class="sale-row">
+              {{ form.id }}      <!-- hidden id field, edit mode এর জন্য জরুরি -->
+              {{ form.DELETE }}  <!-- hidden DELETE checkbox -->
+
+              <td class="px-4 py-2">{{ form.product }}</td>
+              <td class="px-4 py-2">{{ form.quantity }}</td>
+              <td class="px-4 py-2">{{ form.unit_price }}</td>
+              <td class="px-4 py-2 total">0.00</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
 
-      <!-- 💰 Total Section -->
-      <div class="flex justify-end mt-6">
+      <div class="flex justify-between items-center mt-6">
+        <button type="button" id="add-item"
+          class="bg-green-600 text-black px-4 py-2 rounded hover:bg-green-700">➕ Add Item</button>
+
         <div class="text-right">
-          <p class="text-lg text-gray-600">Subtotal: <span id="subtotal" class="font-semibold">0.00</span></p>
-          <p class="text-xl font-bold text-gray-800">Total: <span id="grandtotal">0.00</span></p>
+          <p>Subtotal: <span id="subtotal">0.00</span></p>
+          <p class="font-bold text-xl">Total: <span id="grandtotal">0.00</span></p>
         </div>
       </div>
 
-      <!-- 💾 Submit -->
-      <div class="flex justify-end">
+      <div class="flex justify-end mt-8">
         <button type="submit"
-          class="px-8 py-3 rounded-lg bg-blue-600 text-white text-lg font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-200">
-          💾 Save Sale
-        </button>
+          class="bg-blue-600 text-black px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">💾 Save Sale</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-document.querySelectorAll('#sales-items tr').forEach(row => {
-  const qty = row.querySelector('[name$="quantity"]');
-  const price = row.querySelector('[name$="unit_price"]');
-  const total = row.querySelector('.total');
+document.addEventListener("DOMContentLoaded", () => {
+  const tableBody = document.querySelector("#sales-table tbody");
+  const addBtn = document.getElementById("add-item");
+  const totalForms = document.querySelector("#id_form-TOTAL_FORMS");
 
-  function calc() {
-    const q = parseFloat(qty?.value) || 0;
-    const p = parseFloat(price?.value) || 0;
-    total.textContent = (q * p).toFixed(2);
-    updateTotals();
+  function updateTotals() {
+    let subtotal = 0;
+    document.querySelectorAll(".sale-row").forEach(row => {
+      const qty = parseFloat(row.querySelector('[name$="quantity"]').value) || 0;
+      const price = parseFloat(row.querySelector('[name$="unit_price"]').value) || 0;
+      row.querySelector(".total").textContent = (qty * price).toFixed(2);
+      subtotal += qty * price;
+    });
+    document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+    document.getElementById("grandtotal").textContent = subtotal.toFixed(2);
   }
 
-  qty?.addEventListener('input', calc);
-  price?.addEventListener('input', calc);
-});
+  addBtn.addEventListener("click", () => {
+    const formNum = parseInt(totalForms.value);
+    const lastRow = tableBody.querySelector("tr:last-child");
+    const newRow = lastRow.cloneNode(true);
 
-function updateTotals() {
-  let subtotal = 0;
-  document.querySelectorAll('.total').forEach(td => {
-    subtotal += parseFloat(td.textContent) || 0;
+    newRow.querySelectorAll("input, select").forEach(input => {
+      if (input.name) {
+        input.name = input.name.replace(/-\d+-/, `-${formNum}-`);
+        input.id = input.id.replace(/-\d+-/, `-${formNum}-`);
+      }
+
+      if (input.type === "hidden") {
+        if (input.name.endsWith("id")) {
+          input.value = ""; // new row, no existing id
+        } else if (input.name.endsWith("DELETE")) {
+          input.checked = false;
+        }
+      } else {
+        input.value = "";
+      }
+    });
+
+    tableBody.appendChild(newRow);
+    totalForms.value = formNum + 1;
   });
-  document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-  document.getElementById('grandtotal').textContent = subtotal.toFixed(2);
-}
+
+  tableBody.addEventListener("input", e => {
+    if (e.target.matches('[name$="quantity"], [name$="unit_price"]')) {
+      updateTotals();
+    }
+  });
+
+  updateTotals(); // load page এ total ঠিক দেখানোর জন্য
+});
 </script>
 {% endblock %}
