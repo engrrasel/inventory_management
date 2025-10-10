@@ -1,5 +1,6 @@
 from django import forms
-from .models import SalesInvoice, SalesItem
+from .models import SalesInvoice, SalesItem, ReturnItem, Product
+
 
 
 class SalesInvoiceForm(forms.ModelForm):
@@ -21,3 +22,19 @@ class SalesItemForm(forms.ModelForm):
         }
 
 
+class ReturnItemForm(forms.ModelForm):
+    class Meta:
+        model = ReturnItem
+        fields = ['product', 'quantity', 'reason']
+        widgets = {
+            'reason': forms.Textarea(attrs={'rows': 1, 'class': 'border rounded px-2 py-1 w-full'}),
+            'quantity': forms.NumberInput(attrs={'class': 'border rounded px-2 py-1 w-full'}),
+            'product': forms.Select(attrs={'class': 'border rounded px-2 py-1 w-full'}),
+        }
+
+class ReturnForm(forms.ModelForm):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'class': 'border rounded px-2 py-1 w-full'}))
+
+    class Meta:
+        model = ReturnItem
+        fields = ['date']

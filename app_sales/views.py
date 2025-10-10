@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import modelformset_factory
 from django.contrib import messages
-from .models import SalesInvoice, SalesItem
+from .models import SalesInvoice, SalesItem, ReturnItem
 from .forms import SalesInvoiceForm, SalesItemForm
+from django.utils import timezone
+from .forms import ReturnItemForm, ReturnForm
+
 
 
 def sales_create(request):
@@ -91,3 +94,42 @@ def sales_delete(request, pk):
         return redirect('sales_list')
 
     return render(request, 'sales/sales_confirm_delete.html', {'invoice': invoice})
+
+
+#================= Return Handling =================#
+
+def sales_return_create(request):
+    ReturnFormSet = modelformset_factory(ReturnItem, form=ReturnItemForm, extra=1, can_delete=True)
+
+    invoices = SalesInvoice.objects.all().order_by('-id')
+    today = timezone.now().date()
+
+    if request.method == 'POST':
+        formset = ReturnFormSet(request.POST, queryset=ReturnItem.objects.none())
+        date = request.POST.get('date', today)
+        invoice_id = request.POST.get('invoice')
+
+        invoice = None
+        if invoice_id:
+            invoice = get_object_or_404(SalesInvoice, pk=invoice_id)
+
+        if formset.is_valid() and invoice:
+            for form in formset:
+                if form.cleaned_data.get('product') and not form.cleaned_data.get('DELETE'):
+                    item = form.save(commit=False)
+                    item.invoice = invoice
+                    item.date = date
+                    item.save()
+            messages.success(request, f"Return recorded for Invoice #{invoice.invoice_no}")
+            return redirect('sales_list')
+        else:
+            messages.error(request, "Please select invoice and check the items.")
+
+    else:
+        formset = ReturnFormSet(queryset=ReturnItem.objects.none())
+
+    return render(request, 'sales/sales_return_form.html', {
+        'formset': formset,
+        'invoices': invoices,
+        'today': today,
+    })
