@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Sale{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 flex items-center justify-center p-6">
+  <div class="bg-white shadow-2xl rounded-3xl w-full max-w-5xl p-10 border border-gray-200">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        🧾 <span>Create New Sale</span>
+      </h2>
+      <a href="{% url 'sales_list' %}" class="text-sm text-blue-600 hover:underline">
+        ← Back to Sales List
+      </a>
+    </div>
+
+    <form method="post" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 🧍 Customer Info -->
+      <div class="grid grid-cols-2 gap-6 bg-blue-50/40 p-6 rounded-xl border border-blue-100">
+        {% for field in invoice_form %}
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- 🛒 Sale Items -->
+      <div>
+        <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          🛍️ <span>Sale Items</span>
+        </h3>
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+          <table class="min-w-full text-sm">
+            <thead class="bg-blue-100 text-gray-800 text-left">
+              <tr>
+                <th class="py-3 px-4 font-semibold">Product</th>
+                <th class="py-3 px-4 font-semibold">Quantity</th>
+                <th class="py-3 px-4 font-semibold">Unit Price</th>
+                <th class="py-3 px-4 font-semibold">Total</th>
+              </tr>
+            </thead>
+            <tbody id="sales-items" class="divide-y divide-gray-200">
+              {{ formset.management_form }}
+              {% for form in formset %}
+              <tr class="hover:bg-gray-50 transition">
+                <td class="py-2 px-4">{{ form.product }}</td>
+                <td class="py-2 px-4">{{ form.quantity }}</td>
+                <td class="py-2 px-4">{{ form.unit_price }}</td>
+                <td class="py-2 px-4 font-semibold text-gray-700 total">0.00</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 💰 Total Section -->
+      <div class="flex justify-end mt-6">
+        <div class="text-right">
+          <p class="text-lg text-gray-600">Subtotal: <span id="subtotal" class="font-semibold">0.00</span></p>
+          <p class="text-xl font-bold text-gray-800">Total: <span id="grandtotal">0.00</span></p>
+        </div>
+      </div>
+
+      <!-- 💾 Submit -->
+      <div class="flex justify-end">
+        <button type="submit"
+          class="px-8 py-3 rounded-lg bg-blue-600 text-white text-lg font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-200">
+          💾 Save Sale
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('#sales-items tr').forEach(row => {
+  const qty = row.querySelector('[name$="quantity"]');
+  const price = row.querySelector('[name$="unit_price"]');
+  const total = row.querySelector('.total');
+
+  function calc() {
+    const q = parseFloat(qty?.value) || 0;
+    const p = parseFloat(price?.value) || 0;
+    total.textContent = (q * p).toFixed(2);
+    updateTotals();
+  }
+
+  qty?.addEventListener('input', calc);
+  price?.addEventListener('input', calc);
+});
+
+function updateTotals() {
+  let subtotal = 0;
+  document.querySelectorAll('.total').forEach(td => {
+    subtotal += parseFloat(td.textContent) || 0;
+  });
+  document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('grandtotal').textContent = subtotal.toFixed(2);
+}
+</script>
+{% endblock %}

@@ -23,7 +23,6 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('dashboard/', include('app_dashboard.urls')),
-    path('purchase/', include('app_purchase.urls')),  # ✅ Add this line
-
+    path('dashboard/', include('app_dashboard.urls')),  # 🔹 তোমার কাস্টম ড্যাশবোর্ড রুট
+    path('sales/', include('app_sales.urls')),  # 🔹 তোমার সেলস অ্যাপের রুট
 ]+ static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

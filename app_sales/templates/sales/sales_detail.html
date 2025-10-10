@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sales Invoice #{{ invoice.invoice_no }}</title>
+</head>
+<body>
+    <h2>Sales Invoice #{{ invoice.invoice_no }}</h2>
+    <p><strong>Customer:</strong> {{ invoice.customer }}</p>
+    <p><strong>Date:</strong> {{ invoice.date }}</p>
+    <p><strong>Total Amount:</strong> {{ invoice.total_amount }}</p>
+
+    <h3>Items</h3>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.price }}</td>
+            <td>{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
